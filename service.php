@@ -5,7 +5,7 @@ use Apretaste\Bucket;
 use Apretaste\Request;
 use Apretaste\Response;
 use Apretaste\Database;
-use Framework\GoogleAnalytics;
+use Apretaste\GoogleAnalytics;
 
 class Service
 {
@@ -37,17 +37,27 @@ class Service
 			$filters
 			ORDER BY ((clicks * 100) / impressions) DESC");
 
+		// show error if there is no corrida for the day searched
+		if(empty($ads)) {
+			return $response->setComponent('Message', [
+				'header' => 'No hay anuncios',
+				'icon' => 'fas fa-frown',
+				'text' => 'No encontramos ningún anuncio. Espere unos días y revise nuevamente.'
+			]);
+		}
+
 		// add images to the response
 		$images = [];
-		foreach ($ads as $ad) {
-			if($ad->icon) {
-				$images[] = Bucket::getPathByEnvironment('anuncios', $ad->icon);
+		foreach ($ads as $item) {
+			if($item->icon) {
+				$item->icon = Bucket::getPathByEnvironment('anuncios', $item->icon);
+				$images[] = $item->icon;
 			}
 		}
 
 		// send data to the view
 		$response->setCache();
-		$response->setTemplate('list.ejs', ['ads' => $ads], $images);
+		$response->setComponent('List', ['ads' => $ads], $images);
 	}
 
 	/**
@@ -67,7 +77,11 @@ class Service
 		// stop if ad cannot be found
 		if (empty($ad)) {
 			$response->setCache();
-			return $response->setTemplate('message.ejs');
+			return $response->setComponent('Message', [
+				'header' => 'Anuncio no encontrado',
+				'icon' => 'fas fa-frown',
+				'text' => 'Lamentablemente, el anuncio que busca ha expirado o no existe en nuestro sistema.'
+			]);
 		}
 
 		// increate the ad's clicks
@@ -102,23 +116,15 @@ class Service
 		$images = [];
 		if($ad->image) {
 			$images[] = $ad->image;
-			$ad->image = basename($ad->image);
 		}
 
 		// add the gallery to the array of images
-		for ($i=0; $i < count($ad->gallery); $i++) { 
+		for ($i=0; $i < count($ad->gallery); $i++) {
 			$images[] = $ad->gallery[$i]->img;
-			$ad->gallery[$i] = basename($ad->gallery[$i]->img);
 		}
-
-		// create the content for the view
-		$content = [
-			'isEmail' => $request->input->method == 'email',
-			'ad' => $ad
-		];
 
 		// send data to the view
 		$response->setCache();
-		$response->setTemplate('view.ejs', $content, $images);
+		$response->setComponent('View', (array)$ad, $images);
 	}
 }
