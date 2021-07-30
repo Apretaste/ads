@@ -19,7 +19,7 @@
 		<ap-fab class="tutorial-fab" :data="fab"></ap-fab>
 
 		<!-- button -->
-		<ap-button v-if="showButton" :data="button"></ap-button>
+		<ap-button v-if="showButton" class="mb-3" :data="button"></ap-button>
 	</div>
 </template>
 
